@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Birthday AI Ultimate 💖</title>
+
+<style>
+body{
+ margin:0;
+ font-family:sans-serif;
+ background:black;
+ color:white;
+ overflow-x:hidden;
+ overflow-y:auto;
+}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:#ff4d6d;border-radius:10px;}
+
+/* background */
+canvas{
+ position:fixed;
+ top:0;
+ left:0;
+ width:100%;
+ height:100%;
+ z-index:-3;
+}
+
+#overlay{
+ position:fixed;
+ top:0;left:0;
+ width:100%;
+ height:100%;
+ background:radial-gradient(circle,#ff4d6d22,#000);
+ z-index:-2;
+}
+
+/* hearts */
+#heartContainer{
+ position:fixed;
+ width:100%;
+ height:100%;
+ z-index:-1;
+ pointer-events:none;
+}
+
+.heart{
+ position:absolute;
+ color:#ff4d6d;
+ font-size:18px;
+ animation:up 6s linear forwards;
+ opacity:0;
+}
+
+@keyframes up{
+ 0%{transform:translateY(0);opacity:0;}
+ 10%{opacity:1;}
+ 100%{transform:translateY(-120vh);opacity:0;}
+}
+
+/* banner */
+#banner{
+ position:fixed;
+ top:-100px;
+ width:100%;
+ text-align:center;
+ font-size:26px;
+ font-weight:bold;
+ color:#ff4d6d;
+ text-shadow:0 0 15px #ff4d6d;
+ transition:0.8s;
+ z-index:999;
+}
+
+#banner.show{top:20px;}
+
+/* screens */
+.screen{
+ position:absolute;
+ width:100%;
+ height:100%;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ gap:10px;
+}
+
+.hidden{display:none}
+
+/* inputs */
+input{
+ padding:12px;
+ border:none;
+ border-radius:10px;
+ width:80%;
+ max-width:300px;
+ background:#111;
+ color:white;
+}
+
+button{
+ padding:10px 15px;
+ border:none;
+ border-radius:10px;
+ background:#ff4d6d;
+ color:white;
+ cursor:pointer;
+}
+
+/* 🎂 cake */
+#cake{
+ font-size:160px;
+ transition:0.6s;
+}
+
+#knife{
+ font-size:40px;
+ transition:0.5s;
+}
+
+#slice{
+ font-size:60px;
+ position:absolute;
+ top:40px;
+ opacity:0;
+ transition:0.6s;
+}
+
+#cakeBox{
+ position:relative;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+}
+
+/* flash */
+.flash{
+ position:fixed;
+ top:0;left:0;
+ width:100%;
+ height:100%;
+ background:white;
+ opacity:0;
+}
+
+.flash.active{
+ animation:flash 0.4s;
+}
+
+@keyframes flash{
+ 0%{opacity:0;}
+ 50%{opacity:1;}
+ 100%{opacity:0;}
+}
+
+/* 📷 CAMERA FIXED */
+#camera video{
+ width:260px;
+ height:340px;
+ border-radius:15px;
+ object-fit:cover;
+ border:2px solid #ff4d6d;
+ box-shadow:0 0 20px #ff4d6d;
+}
+
+#camera{
+ gap:12px;
+ padding:20px;
+}
+
+#camera h2{
+ margin-bottom:5px;
+}
+
+/* corner photos */
+.cornerPhoto{
+ position:fixed;
+ width:90px;
+ height:90px;
+ border-radius:12px;
+ object-fit:cover;
+ box-shadow:0 0 15px #ff4d6d;
+ border:2px solid #ff4d6d;
+ z-index:100;
+ transition:0.8s ease;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="bg"></canvas>
+<div id="overlay"></div>
+<div id="heartContainer"></div>
+
+<div id="banner">🎉 HAPPY BIRTHDAY JI 💖</div>
+<div class="flash"></div>
+
+<!-- SECRET -->
+<div id="lock" class="screen">
+ <h2>🔐 Secret Code</h2>
+ <input id="pass">
+ <button onclick="unlock()">Unlock</button>
+</div>
+
+<!-- CAMERA -->
+<div id="camera" class="screen hidden">
+ <h2>📸 Click 4 cute selfies baby 💖</h2>
+ <video id="video" autoplay playsinline></video>
+ <button onclick="capture()">Capture</button>
+ <p id="count">0 / 4</p>
+ <button id="submitBtn" class="hidden" onclick="submit()">Submit</button>
+</div>
+
+<!-- GIFT -->
+<div id="gift" class="screen hidden">
+ <h2>🎁 Gift Box</h2>
+ <button onclick="openCake()">Open Gift</button>
+</div>
+
+<!-- CAKE -->
+<div id="cakeScreen" class="screen hidden">
+
+ <h2>🎂 Cake Time</h2>
+
+ <div id="cakeBox">
+  <div id="knife">🔪</div>
+  <div id="cake">🕯️🎂</div>
+  <div id="slice">🍰</div>
+ </div>
+
+ <button id="blowBtn" onclick="blowCandle()">💨 Blow Candle</button>
+ <button id="liftBtn" class="hidden" onclick="liftKnife()">🔪 Lift Knife</button>
+ <button id="cutBtn" class="hidden" onclick="cutCake()">🍰 Cut Cake</button>
+
+</div>
+
+<!-- QA -->
+<div id="qa" class="screen hidden">
+ <h2 id="q">Question</h2>
+ <input id="ans">
+ <button onclick="nextQ()">Next</button>
+</div>
+
+<!-- WISH -->
+<div id="wish" class="screen hidden">
+ <h2 id="wishText"></h2>
+ <input id="wishInput">
+ <button onclick="sendMail()">Send</button>
+</div>
+
+<!-- FINAL -->
+<div id="final" class="screen hidden">
+ <h2>💖 Love Lines</h2>
+ <div id="loveBox"></div>
+</div>
+
+<script>
+
+/* background */
+let c=document.getElementById("bg");
+let ctx=c.getContext("2d");
+
+function resize(){
+ c.width=innerWidth;
+ c.height=innerHeight;
+}
+resize();
+window.onresize=resize;
+
+let stars=[];
+for(let i=0;i<220;i++){
+ stars.push({
+  x:Math.random()*c.width,
+  y:Math.random()*c.height,
+  r:Math.random()*1.5,
+  d:Math.random()*0.5
+ });
+}
+
+function draw(){
+ ctx.clearRect(0,0,c.width,c.height);
+
+ let g=ctx.createRadialGradient(c.width/2,c.height/2,0,c.width/2,c.height/2,c.width);
+ g.addColorStop(0,"rgba(255,77,109,0.10)");
+ g.addColorStop(1,"black");
+
+ ctx.fillStyle=g;
+ ctx.fillRect(0,0,c.width,c.height);
+
+ ctx.fillStyle="white";
+
+ stars.forEach(s=>{
+  ctx.beginPath();
+  ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+  ctx.fill();
+
+  s.y+=s.d+0.2;
+  if(s.y>c.height){
+   s.y=0;
+   s.x=Math.random()*c.width;
+  }
+ });
+
+ requestAnimationFrame(draw);
+}
+draw();
+
+/* hearts */
+function createHeart(){
+ let h=document.createElement("div");
+ h.className="heart";
+ h.innerHTML="❤️";
+ h.style.left=Math.random()*100+"vw";
+ document.getElementById("heartContainer").appendChild(h);
+ setTimeout(()=>h.remove(),6000);
+}
+setInterval(createHeart,180);
+
+/* banner */
+function showBanner(){
+ let b=document.getElementById("banner");
+ b.classList.add("show");
+ setTimeout(()=>b.classList.remove("show"),4000);
+}
+
+/* data */
+let code="suggi";
+let photos=[];
+let stream;
+let cameraAllowed=false;
+
+/* unlock */
+async function unlock(){
+ if(pass.value!==code){
+  alert("Wrong ❌");
+  return;
+ }
+
+ lock.classList.add("hidden");
+ camera.classList.remove("hidden");
+
+ stream=await navigator.mediaDevices.getUserMedia({video:true});
+ video.srcObject=stream;
+
+ cameraAllowed=true;
+}
+
+/* capture */
+function capture(){
+
+ if(!cameraAllowed){
+  alert("📷 BADMASI NHI LADLI !");
+  return;
+ }
+
+ if(photos.length>=4) return;
+
+ let c=document.createElement("canvas");
+ c.width=video.videoWidth;
+ c.height=video.videoHeight;
+
+ let ct=c.getContext("2d");
+ ct.drawImage(video,0,0);
+
+ let img=c.toDataURL();
+ photos.push(img);
+
+ count.innerText=photos.length+" / 4";
+
+ placePhoto(img,photos.length-1);
+
+ if(photos.length===4){
+  submitBtn.classList.remove("hidden");
+ }
+}
+
+/* corners */
+function placePhoto(src,i){
+
+ let pos=[
+  {top:"10px",left:"10px"},
+  {top:"10px",right:"10px"},
+  {bottom:"10px",left:"10px"},
+  {bottom:"10px",right:"10px"}
+ ];
+
+ let img=document.createElement("img");
+ img.src=src;
+ img.className="cornerPhoto";
+
+ let p=pos[i];
+
+ setTimeout(()=>{
+  if(p.top) img.style.top=p.top;
+  if(p.bottom) img.style.bottom=p.bottom;
+  if(p.left) img.style.left=p.left;
+  if(p.right) img.style.right=p.right;
+ },50);
+
+ document.body.appendChild(img);
+}
+
+/* submit */
+function submit(){
+ camera.classList.add("hidden");
+ stream.getTracks().forEach(t=>t.stop());
+ gift.classList.remove("hidden");
+}
+
+/* gift */
+function openCake(){
+ gift.classList.add("hidden");
+ cakeScreen.classList.remove("hidden");
+ showBanner();
+}
+
+/* candle */
+function blowCandle(){
+ cake.innerHTML="💨🎂";
+ setTimeout(()=>{
+  cake.innerHTML="🎂✨";
+  blowBtn.style.display="none";
+  liftBtn.classList.remove("hidden");
+ },600);
+}
+
+/* knife */
+function liftKnife(){
+ knife.style.transform="translateY(-40px) rotate(-20deg)";
+ liftBtn.style.display="none";
+
+ setTimeout(()=>{
+  cutBtn.classList.remove("hidden");
+ },600);
+}
+
+/* cut */
+function cutCake(){
+ cutBtn.style.display="none";
+ document.querySelector(".flash").classList.add("active");
+
+ cake.style.transform="scale(1.1)";
+
+ setTimeout(()=>{
+  slice.style.opacity="1";
+ },400);
+
+ setTimeout(()=>{
+  slice.style.transform="translateX(140px)";
+ },700);
+
+ setTimeout(()=>{
+  cakeScreen.classList.add("hidden");
+  startQA();
+ },1200);
+}
+
+/* QA */
+let qIndex=0;
+let answers=[];
+
+let qs=[
+"do you love me baby ?",
+"your name baby ?",
+"birthday today baby?",
+"my name baby ?"
+];
+
+function startQA(){
+ qa.classList.remove("hidden");
+ showQ();
+}
+
+function showQ(){
+ q.innerText=qs[qIndex];
+}
+
+function nextQ(){
+
+ let v=ans.value.toLowerCase().trim();
+ let ok=["yes","no","ha","haa","hmm","ok","fine","good","kalyani","anchal","prashant","kutti"];
+
+ if(!ok.includes(v)){
+  alert("😆 GADDARI KARBE ! ");
+  return;
+ }
+
+ answers.push(v);
+ ans.value="";
+ qIndex++;
+
+ if(qIndex>=qs.length){
+  qa.classList.add("hidden");
+  startWish();
+ }else{
+  showQ();
+ }
+}
+
+/* wish */
+function startWish(){
+ wish.classList.remove("hidden");
+
+ let txt="Write your wish baby 💌...";
+ let i=0;
+
+ let t=setInterval(()=>{
+  wishText.innerText=txt.slice(0,i);
+  i++;
+  if(i>txt.length) clearInterval(t);
+ },40);
+}
+
+/* mail */
+function sendMail(){
+ let body="WISH:\n"+wishInput.value+"\n\nANS:\n";
+ answers.forEach(a=>body+=a+"\n");
+
+// window.open("mailto:?subject=Birthday Love 💖&body="+encodeURIComponent(body));
+window.location.href =
+"mailto:pkmehuskyp018@gmail.com?subject=Birthday Love 💖&body="
++ encodeURIComponent(body);
+
+ wish.classList.add("hidden");
+ startFinal();
+}
+
+/* final */
+function startFinal(){
+ final.classList.remove("hidden");
+
+ loveBox.innerHTML=`
+ ❤️ You are my heartbeat, my smile, my world.<br><br>
+ ❤️ I love you more than words can say.<br><br>
+ ❤️ You are my forever person.<br><br>
+  ❤️ You are my heartbeat, my peace, my smile, my world.<br><br>
+ ❤️ Without you nothing feels complete, with you everything feels magical.<br><br>
+ ❤️ I will choose you in every lifetime, every universe, every possibility.<br><br>
+ ❤️ You are my forever, my always, my home, my destiny.<br><br>
+ ❤️ Happy Birthday my love 💖
+ `;
+}
+
+</script>
+
+</body>
+</html>
